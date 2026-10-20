@@ -193,22 +193,14 @@ class ScheduleTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "ScheduleTile::on_state");
     
-    // Debug: log what we receive
-    ESP_LOGI(TAG, "ScheduleTile data keys:");
-    for (auto item : data) {
-      ESP_LOGI(TAG, "  - %s = %s", item.key().c_str(), 
-               item.value().is<JsonVariantConst>() ? "object" : 
-               item.value().is<const char*>() ? item.value<const char*>() : 
-               item.value().is<int>() ? std::to_string(item.value<int>()).c_str() : "other");
-    }
-    
     // Try multiple possible attribute names
     int aantal = data["aantal_afspraken_vandaag"] | 0;
     if (aantal == 0) {
       aantal = data["Aantal afspraken vandaag"] | 0;  // Try with capital
     }
-    if (aantal == 0 && data.containsKey("afspraken")) {
-      // Count from afspraken array if attribute is missing
+    
+    // Fallback: count from afspraken array if attribute is 0 or missing
+    if (aantal == 0 && data["afspraken"].is<JsonArrayConst>()) {
       JsonArrayConst afspraken = data["afspraken"];
       time_t now_ts = time(nullptr);
       struct tm *now_tm = localtime(&now_ts);
@@ -216,7 +208,7 @@ class ScheduleTile : public tessera::Tile {
       strftime(today_str, sizeof(today_str), "%Y-%m-%d", now_tm);
       
       for (auto item : afspraken) {
-        JsonObjectConst afspraak = item.value();
+        JsonObjectConst afspraak = item;
         const char *start = afspraak["start"];
         if (start && strncmp(start, today_str, 10) == 0) {
           aantal++;
