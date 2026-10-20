@@ -1,7 +1,12 @@
 # Changelog
 
-## 0.1.8 - 2026-10-20
+## 0.2.0 - 2026-10-20
 - Add verbose debug logging to diagnose data issues
+- Log all keys and values to see what data is received
+- Will help identify why data is not showing
+
+## 0.1.8 - 2026-10-20
+- Add verbose debug logging to see exactly what data is received
 - Log all keys and values to see what data is received
 - Will help identify why data is not showing
 

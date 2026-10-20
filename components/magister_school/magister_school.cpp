@@ -211,6 +211,8 @@ class ScheduleTile : public tessera::Tile {
     JsonObjectConst attributes = data["attributes"];
     ESP_LOGI(TAG, "Attributes exists: %s", attributes ? "YES" : "NO");
     
+    int aantal = 0;
+    
     if (attributes) {
       // Log all attribute keys
       for (auto item : attributes) {
@@ -218,7 +220,7 @@ class ScheduleTile : public tessera::Tile {
       }
       
       // Try multiple possible attribute names
-      int aantal = attributes["aantal_afspraken_vandaag"] | 0;
+      aantal = attributes["aantal_afspraken_vandaag"] | 0;
       ESP_LOGI(TAG, "aantal_afspraken_vandaag (lowercase): %d", aantal);
       
       if (aantal == 0) {
