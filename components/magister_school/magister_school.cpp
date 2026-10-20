@@ -117,7 +117,12 @@ class NextLessonTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "NextLessonTile::on_state");
     
-    JsonObjectConst afspraken = data["afspraken"];
+    JsonObjectConst attributes = data["attributes"];
+    JsonObjectConst afspraken;
+    
+    if (attributes) {
+      afspraken = attributes["afspraken"];
+    }
     
     std::string vak = get_next_lesson_vak(afspraken);
     std::string lokaal = get_next_lesson_lokaal(afspraken);
@@ -311,9 +316,14 @@ class HomeworkTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "HomeworkTile::on_state");
     
-    int aantal = data["aantal_huiswerk_onafgerond"] | 0;
-    if (aantal == 0) {
-      aantal = data["aantal_huiswerk"] | 0;
+    JsonObjectConst attributes = data["attributes"];
+    int aantal = 0;
+    
+    if (attributes) {
+      aantal = attributes["aantal_huiswerk_onafgerond"] | 0;
+      if (aantal == 0) {
+        aantal = attributes["aantal_huiswerk"] | 0;
+      }
     }
     
     if (aantal > 0) {
@@ -358,7 +368,13 @@ class GradesTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "GradesTile::on_state");
     
-    JsonArrayConst cijfers = data["cijfers"];
+    JsonObjectConst attributes = data["attributes"];
+    JsonArrayConst cijfers;
+    
+    if (attributes) {
+      cijfers = attributes["recente_cijfers"];
+    }
+    
     if (cijfers && cijfers.size() > 0) {
       ui::set_text(value_, "See app");
     } else {

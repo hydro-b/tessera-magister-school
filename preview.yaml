@@ -2,58 +2,135 @@
 # This simulates the data from Home Assistant entities
 
 tiles:
+  # Next lesson tile - with next lesson
   - tile: next_lesson
     name: Math next
     entity: sensor.magister_jan
+    state: "on"
     attributes:
       vak: "Wiskunde B"
       lokaal: "A12"
       start_time: "{now+25m}"
+      eind_tijd: "{now+1h25m}"
       
+  # Next lesson tile - no lesson today
   - tile: next_lesson
     name: No lesson
     entity: sensor.magister_jan
+    state: "off"
     attributes:
       vak: ""
       lokaal: ""
       start_time: 0
+      eind_tijd: 0
     sizes: [2x1]
     
+  # Schedule tile - full day with appointments
   - tile: schedule
     name: Full day
     entity: sensor.magister_jan
+    state: "on"
     attributes:
-      aantal_afspraken: 6
+      aantal_afspraken_vandaag: 6
+      afspraken:
+        - start: "{now}"
+          end: "{now+1h}"
+          vak: "Natuurkunde"
+          lokaal: "B15"
+        - start: "{now+1h10m}"
+          end: "{now+2h10m}"
+          vak: "Wiskunde B"
+          lokaal: "A12"
+        - start: "{now+2h20m}"
+          end: "{now+3h20m}"
+          vak: "Nederlands"
+          lokaal: "C05"
+        - start: "{now+3h30m}"
+          end: "{now+4h30m}"
+          vak: "Geschiedenis"
+          lokaal: "D08"
+        - start: "{now+4h40m}"
+          end: "{now+5h40m}"
+          vak: "Engels"
+          lokaal: "A08"
+        - start: "{now+5h50m}"
+          end: "{now+6h50m}"
+          vak: "Scheikunde"
+          lokaal: "B20"
       
+  # Schedule tile - empty day
   - tile: schedule
     name: Empty day
     entity: sensor.magister_jan
+    state: "off"
     attributes:
-      aantal_afspraken: 0
+      aantal_afspraken_vandaag: 0
+      afspraken: []
     sizes: [2x2]
     
+  # Homework tile - with homework
   - tile: homework
     name: Some homework
     entity: sensor.magister_jan
+    state: "on"
     attributes:
       aantal_huiswerk: 3
+      huiswerk:
+        - vak: "Wiskunde B"
+          opdracht: "Hoofdstuk 4, opgaven 1-10"
+          deadline: "{now+2d}"
+        - vak: "Nederlands"
+          opdracht: "Essay schrijven over klimaatverandering"
+          deadline: "{now+5d}"
+        - vak: "Engels"
+          opdracht: "Vocabulaire leren hoofdstuk 6"
+          deadline: "{now+1d}"
       
+  # Homework tile - no homework
   - tile: homework
     name: No homework
     entity: sensor.magister_jan
+    state: "off"
     attributes:
       aantal_huiswerk: 0
+      huiswerk: []
     sizes: [2x1]
     
+  # Grades tile - with recent grades
   - tile: grades
     name: With grades
     entity: sensor.magister_jan
+    state: "on"
     attributes:
-      cijfers: []
+      aantal_cijfers: 5
+      recente_cijfers:
+        - vak: "Wiskunde B"
+          cijfer: 8.5
+          datum: "{now-1d}"
+          toets: "Toets hoofdstuk 3"
+        - vak: "Natuurkunde"
+          cijfer: 7.8
+          datum: "{now-3d}"
+          toets: "Praktijkverslag"
+        - vak: "Nederlands"
+          cijfer: 9.0
+          datum: "{now-1w}"
+          toets: "Essay"
+        - vak: "Geschiedenis"
+          cijfer: 8.2
+          datum: "{now-2w}"
+          toets: "Toets Middeleeuwen"
+        - vak: "Engels"
+          cijfer: 8.7
+          datum: "{now-2w}"
+          toets: "Schriftelijk toets"
       
+  # Grades tile - no grades yet
   - tile: grades
     name: No grades
     entity: sensor.magister_jan
+    state: "off"
     attributes:
-      cijfers: []
+      aantal_cijfers: 0
+      recente_cijfers: []
     sizes: [2x1]
