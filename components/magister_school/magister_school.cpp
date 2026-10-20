@@ -1,11 +1,11 @@
 #include "magister_school.h"
 #include "esphome/core/log.h"
+#include <ctime>
 
 namespace esphome::magister_school {
 
 using tessera::Font;
 namespace ui = tessera::ui;
-namespace theme = tessera::theme;
 
 static const char *const TAG = "magister_school";
 
@@ -13,21 +13,19 @@ static const char *const TAG = "magister_school";
 std::string get_next_lesson_vak(JsonObjectConst afspraken) {
   if (!afspraken) return "";
   
-  uint32_t now_ts = time(nullptr);
+  time_t now_ts = time(nullptr);
   char now_str[32];
   strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
   
-  // Find first appointment that starts after now
   for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    JsonObjectConst afspraak = item.value();
     if (!afspraak) continue;
     
-    const char *start_str = afspraak.get<const char *>("start");
+    const char *start_str = afspraak["start"];
     if (!start_str) continue;
     
-    // Compare strings (works for ISO format YYYY-MM-DD HH:MM:SS)
     if (strcmp(start_str, now_str) > 0) {
-      const char *vak = afspraak.get<const char *>("vak");
+      const char *vak = afspraak["vak"];
       return vak ? vak : "";
     }
   }
@@ -37,21 +35,20 @@ std::string get_next_lesson_vak(JsonObjectConst afspraken) {
 std::string get_next_lesson_lokaal(JsonObjectConst afspraken) {
   if (!afspraken) return "";
   
-  uint32_t now_ts = time(nullptr);
+  time_t now_ts = time(nullptr);
   char now_str[32];
   strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
   
   for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    JsonObjectConst afspraak = item.value();
     if (!afspraak) continue;
     
-    const char *start_str = afspraak.get<const char *>("start");
+    const char *start_str = afspraak["start"];
     if (!start_str) continue;
     
     if (strcmp(start_str, now_str) > 0) {
-      const char *lokaal = afspraak.get<const char *>("lokaal");
+      const char *lokaal = afspraak["lokaal"];
       if (lokaal) {
-        // Take first part before comma
         char lokaal_first[32];
         strncpy(lokaal_first, lokaal, sizeof(lokaal_first) - 1);
         lokaal_first[sizeof(lokaal_first) - 1] = '\0';
@@ -65,23 +62,21 @@ std::string get_next_lesson_lokaal(JsonObjectConst afspraken) {
   return "";
 }
 
-uint32_t get_next_lesson_start(JsonObjectConst afspraken) {
+time_t get_next_lesson_start(JsonObjectConst afspraken) {
   if (!afspraken) return 0;
   
-  uint32_t now_ts = time(nullptr);
+  time_t now_ts = time(nullptr);
   char now_str[32];
   strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
   
   for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    JsonObjectConst afspraak = item.value();
     if (!afspraak) continue;
     
-    const char *start_str = afspraak.get<const char *>("start");
+    const char *start_str = afspraak["start"];
     if (!start_str) continue;
     
     if (strcmp(start_str, now_str) > 0) {
-      // Parse datetime string to timestamp
-      // Format: YYYY-MM-DD HH:MM:SS
       struct tm tm = {};
       sscanf(start_str, "%d-%d-%d %d:%d:%d", 
              &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
@@ -122,11 +117,11 @@ class NextLessonTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "NextLessonTile::on_state");
     
-    JsonObjectConst afspraken = data["afspraken"].to<JsonObjectConst>();
+    JsonObjectConst afspraken = data["afspraken"];
     
     std::string vak = get_next_lesson_vak(afspraken);
     std::string lokaal = get_next_lesson_lokaal(afspraken);
-    uint32_t start_time = get_next_lesson_start(afspraken);
+    time_t start_time = get_next_lesson_start(afspraken);
     
     vak_ = vak;
     lokaal_ = lokaal;
@@ -174,7 +169,7 @@ class NextLessonTile : public tessera::Tile {
   lv_obj_t *icon_;
   std::string vak_;
   std::string lokaal_;
-  uint32_t start_time_ = 0;
+  time_t start_time_ = 0;
 };
 
 // ============== Schedule Tile ==============
@@ -242,7 +237,6 @@ class HomeworkTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "HomeworkTile::on_state");
     
-    // Try aantal_huiswerk_onafgerond first, then aantal_huiswerk
     int aantal = data["aantal_huiswerk_onafgerond"] | 0;
     if (aantal == 0) {
       aantal = data["aantal_huiswerk"] | 0;
@@ -290,10 +284,8 @@ class GradesTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "GradesTile::on_state");
     
-    // For now, just show no grades - can be enhanced later
-    JsonArrayConst cijfers = data["cijfers"].to<JsonArrayConst>();
+    JsonArrayConst cijfers = data["cijfers"];
     if (cijfers && cijfers.size() > 0) {
-      // Would parse cijfers here
       ui::set_text(value_, "See app");
     } else {
       ui::set_text(value_, plugin_->text("no_grades"));
