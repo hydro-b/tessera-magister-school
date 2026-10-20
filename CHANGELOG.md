@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.8 - 2026-10-20
+- Add verbose debug logging to diagnose data issues
+- Log all keys and values to see what data is received
+- Will help identify why data is not showing
+
 ## 0.1.7 - 2026-10-20
 - Fix: Read attributes from correct location in entity data
 - Data structure is {state, name, attributes: {...}} not flat
