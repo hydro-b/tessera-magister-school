@@ -193,15 +193,18 @@ class ScheduleTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "ScheduleTile::on_state");
     
+    // Get attributes from the entity data
+    JsonObjectConst attributes = data["attributes"];
+    
     // Try multiple possible attribute names
-    int aantal = data["aantal_afspraken_vandaag"] | 0;
+    int aantal = attributes["aantal_afspraken_vandaag"] | 0;
     if (aantal == 0) {
-      aantal = data["Aantal afspraken vandaag"] | 0;  // Try with capital
+      aantal = attributes["Aantal afspraken vandaag"] | 0;  // Try with capital
     }
     
     // Fallback: count from afspraken array if attribute is 0 or missing
-    if (aantal == 0 && data["afspraken"].is<JsonArrayConst>()) {
-      JsonArrayConst afspraken = data["afspraken"];
+    if (aantal == 0 && attributes["afspraken"].is<JsonArrayConst>()) {
+      JsonArrayConst afspraken = attributes["afspraken"];
       time_t now_ts = time(nullptr);
       struct tm *now_tm = localtime(&now_ts);
       char today_str[11];
@@ -216,7 +219,8 @@ class ScheduleTile : public tessera::Tile {
       }
     }
     
-    ESP_LOGI(TAG, "aantal_afspraken_vandaag = %d", aantal);
+    ESP_LOGI(TAG, "State: %s, aantal_afspraken_vandaag = %d", 
+             data["state"] | "unknown", aantal);
     
     if (aantal > 0) {
       char buf[32];
@@ -224,11 +228,12 @@ class ScheduleTile : public tessera::Tile {
       ui::set_text(count_, buf);
     } else {
       // Check if data is missing entirely
-      if (data.size() == 0) {
-        ESP_LOGW(TAG, "No data received from app! Data size = 0");
-        ui::set_text(count_, "No data");
+      const char *state = data["state"];
+      if (!state || strcmp(state, "unavailable") == 0 || strcmp(state, "unknown") == 0) {
+        ESP_LOGW(TAG, "Entity unavailable or unknown");
+        ui::set_text(count_, "No entity");
       } else {
-        ESP_LOGW(TAG, "Data received but aantal = 0");
+        ESP_LOGW(TAG, "Data received but aantal = 0, state = %s", state ? state : "null");
         ui::set_text(count_, "0 lessons");
       }
     }
