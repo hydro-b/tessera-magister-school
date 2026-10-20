@@ -191,52 +191,89 @@ class ScheduleTile : public tessera::Tile {
   }
   
   void on_state(JsonObjectConst data) override {
-    ESP_LOGD(TAG, "ScheduleTile::on_state");
+    ESP_LOGI(TAG, "=== ScheduleTile on_state called ===");
+    ESP_LOGI(TAG, "Data size: %d", data.size());
     
-    // Get attributes from the entity data
-    JsonObjectConst attributes = data["attributes"];
-    
-    // Try multiple possible attribute names
-    int aantal = attributes["aantal_afspraken_vandaag"] | 0;
-    if (aantal == 0) {
-      aantal = attributes["Aantal afspraken vandaag"] | 0;  // Try with capital
+    // Log all keys in data
+    for (auto item : data) {
+      ESP_LOGI(TAG, "Top-level key: %s", item.key().c_str());
     }
     
-    // Fallback: count from afspraken array if attribute is 0 or missing
-    if (aantal == 0 && attributes["afspraken"].is<JsonArrayConst>()) {
-      JsonArrayConst afspraken = attributes["afspraken"];
-      time_t now_ts = time(nullptr);
-      struct tm *now_tm = localtime(&now_ts);
-      char today_str[11];
-      strftime(today_str, sizeof(today_str), "%Y-%m-%d", now_tm);
+    // Check for state
+    const char *state = data["state"];
+    ESP_LOGI(TAG, "State: %s", state ? state : "NULL");
+    
+    // Check for name
+    const char *name = data["name"];
+    ESP_LOGI(TAG, "Name: %s", name ? name : "NULL");
+    
+    // Get attributes
+    JsonObjectConst attributes = data["attributes"];
+    ESP_LOGI(TAG, "Attributes exists: %s", attributes ? "YES" : "NO");
+    
+    if (attributes) {
+      // Log all attribute keys
+      for (auto item : attributes) {
+        ESP_LOGI(TAG, "Attribute key: %s", item.key().c_str());
+      }
       
-      for (auto item : afspraken) {
-        JsonObjectConst afspraak = item;
-        const char *start = afspraak["start"];
-        if (start && strncmp(start, today_str, 10) == 0) {
-          aantal++;
+      // Try multiple possible attribute names
+      int aantal = attributes["aantal_afspraken_vandaag"] | 0;
+      ESP_LOGI(TAG, "aantal_afspraken_vandaag (lowercase): %d", aantal);
+      
+      if (aantal == 0) {
+        aantal = attributes["Aantal afspraken vandaag"] | 0;
+        ESP_LOGI(TAG, "Aantal afspraken vandaag (capital): %d", aantal);
+      }
+      
+      // Check afspraken array
+      if (attributes["afspraken"].is<JsonArrayConst>()) {
+        JsonArrayConst afspraken = attributes["afspraken"];
+        ESP_LOGI(TAG, "Afspraken array size: %d", afspraken.size());
+        
+        // Count today's appointments
+        time_t now_ts = time(nullptr);
+        struct tm *now_tm = localtime(&now_ts);
+        char today_str[11];
+        strftime(today_str, sizeof(today_str), "%Y-%m-%d", now_tm);
+        ESP_LOGI(TAG, "Today's date: %s", today_str);
+        
+        int counted = 0;
+        for (auto item : afspraken) {
+          JsonObjectConst afspraak = item;
+          const char *start = afspraak["start"];
+          if (start && strncmp(start, today_str, 10) == 0) {
+            counted++;
+            ESP_LOGI(TAG, "Found today's appointment: %s", start);
+          }
+        }
+        ESP_LOGI(TAG, "Counted today's appointments: %d", counted);
+        
+        if (aantal == 0) {
+          aantal = counted;
         }
       }
+      
+      ESP_LOGI(TAG, "Final aantal: %d", aantal);
+    } else {
+      ESP_LOGW(TAG, "No attributes in data!");
     }
-    
-    ESP_LOGI(TAG, "State: %s, aantal_afspraken_vandaag = %d", 
-             data["state"] | "unknown", aantal);
     
     if (aantal > 0) {
       char buf[32];
       snprintf(buf, sizeof(buf), "%d lessons today", aantal);
       ui::set_text(count_, buf);
+      ESP_LOGI(TAG, "Showing: %s", buf);
     } else {
-      // Check if data is missing entirely
-      const char *state = data["state"];
       if (!state || strcmp(state, "unavailable") == 0 || strcmp(state, "unknown") == 0) {
-        ESP_LOGW(TAG, "Entity unavailable or unknown");
+        ESP_LOGW(TAG, "Entity unavailable or unknown: %s", state ? state : "NULL");
         ui::set_text(count_, "No entity");
       } else {
         ESP_LOGW(TAG, "Data received but aantal = 0, state = %s", state ? state : "null");
         ui::set_text(count_, "0 lessons");
       }
     }
+    ESP_LOGI(TAG, "=== End on_state ===");
   }
   
   void on_theme() override {
