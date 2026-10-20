@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7 - 2026-10-20
+- Fix: Read attributes from correct location in entity data
+- Data structure is {state, name, attributes: {...}} not flat
+- Better logging to show state and attribute values
+
 ## 0.1.6 - 2026-10-20
 - Fix C++ syntax errors in ScheduleTile
 - Fallback: count afspraken array for today if attribute is missing
