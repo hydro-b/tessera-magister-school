@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.6 - 2026-10-20
+- Fix C++ syntax errors in ScheduleTile
+- Fallback: count afspraken array for today if attribute is missing
+- Handle both 'aantal_afspraken_vandaag' and 'Aantal afspraken vandaag'
+
+## 0.1.5 - 2026-10-20
+- Fix C++ compilation errors (ArduinoJson API, time_t types)
+
+## 0.1.4 - 2026-10-20
+- Fix: Read correct Magister attributes
+- Parse next lesson from afspraken array
+
 ## 0.1.1 - 2026-10-20
 - Fix: Read correct Magister attributes (afspraken array, aantal_afspraken_vandaag)
 - Parse next lesson from afspraken (vak, lokaal, start time)
