@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "name": "English"
+  },
+  "screen": {
+    "now": "now",
+    "minutes": "{n} min",
+    "none": "None",
+    "loading": "Loading...",
+    "no_data": "No data",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "homework_count": "{n} open",
+    "grade_avg": "Avg: {n}",
+    "lesson": "Lesson",
+    "at_time": "at {time}",
+    "in_room": "Room {room}",
+    "no_lessons": "No lessons today",
+    "no_homework": "No homework",
+    "no_grades": "No grades yet"
+  },
+  "app": {
+    "name": "Magister School",
+    "summary": "Your school schedule, homework, and grades from Magister, via Home Assistant.",
+    "tile_next_lesson": "Next lesson",
+    "tile_schedule": "Schedule",
+    "tile_homework": "Homework",
+    "tile_grades": "Grades",
+    "tile_next_lesson_example": "Math at 10:00",
+    "tile_schedule_example": "5 lessons today",
+    "tile_homework_example": "3 assignments",
+    "tile_grades_example": "8.5 average",
+    "card_schedule": "Full schedule",
+    "card_homework": "All homework",
+    "card_grades": "All grades",
+    "tap_schedule": "View schedule",
+    "tap_homework": "View homework",
+    "tap_grades": "View grades",
+    "input_child_entity": "Child sensor",
+    "input_child_entity_hint": "The Magister sensor for your child (e.g., sensor.magister_jan)"
+  }
+}

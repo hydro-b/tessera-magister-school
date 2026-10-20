@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "name": "Dutch"
+  },
+  "screen": {
+    "now": "nu",
+    "minutes": "{n} min",
+    "none": "Geen",
+    "loading": "Laden...",
+    "no_data": "Geen data",
+    "today": "Vandaag",
+    "tomorrow": "Morgen",
+    "homework_count": "{n} open",
+    "grade_avg": "Gem: {n}",
+    "lesson": "Les",
+    "at_time": "om {time}",
+    "in_room": "Lokaal {room}",
+    "no_lessons": "Geen lessen vandaag",
+    "no_homework": "Geen huiswerk",
+    "no_grades": "Nog geen cijfers"
+  },
+  "app": {
+    "name": "Magister School",
+    "summary": "Je schoolschema, huiswerk en cijfers uit Magister, via Home Assistant.",
+    "tile_next_lesson": "Volgende les",
+    "tile_schedule": "Rooster",
+    "tile_homework": "Huiswerk",
+    "tile_grades": "Cijfers",
+    "tile_next_lesson_example": "Wiskunde om 10:00",
+    "tile_schedule_example": "5 lessen vandaag",
+    "tile_homework_example": "3 opdrachten",
+    "tile_grades_example": "8,5 gemiddeld",
+    "card_schedule": "Volledig rooster",
+    "card_homework": "Alles huiswerk",
+    "card_grades": "Alle cijfers",
+    "tap_schedule": "Bekijk rooster",
+    "tap_homework": "Bekijk huiswerk",
+    "tap_grades": "Bekijk cijfers",
+    "input_child_entity": "Kind sensor",
+    "input_child_entity_hint": "De Magister sensor voor je kind (bijv. sensor.magister_jan)"
+  }
+}

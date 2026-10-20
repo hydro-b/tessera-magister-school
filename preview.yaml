@@ -1,0 +1,59 @@
+# Preview data for Magister School plugin
+# This simulates the data from Home Assistant entities
+
+tiles:
+  - tile: next_lesson
+    name: Math next
+    entity: sensor.magister_jan
+    attributes:
+      vak: "Wiskunde B"
+      lokaal: "A12"
+      start_time: "{now+25m}"
+      
+  - tile: next_lesson
+    name: No lesson
+    entity: sensor.magister_jan
+    attributes:
+      vak: ""
+      lokaal: ""
+      start_time: 0
+    sizes: [2x1]
+    
+  - tile: schedule
+    name: Full day
+    entity: sensor.magister_jan
+    attributes:
+      aantal_afspraken: 6
+      
+  - tile: schedule
+    name: Empty day
+    entity: sensor.magister_jan
+    attributes:
+      aantal_afspraken: 0
+    sizes: [2x2]
+    
+  - tile: homework
+    name: Some homework
+    entity: sensor.magister_jan
+    attributes:
+      aantal_huiswerk: 3
+      
+  - tile: homework
+    name: No homework
+    entity: sensor.magister_jan
+    attributes:
+      aantal_huiswerk: 0
+    sizes: [2x1]
+    
+  - tile: grades
+    name: With grades
+    entity: sensor.magister_jan
+    attributes:
+      cijfers: []
+      
+  - tile: grades
+    name: No grades
+    entity: sensor.magister_jan
+    attributes:
+      cijfers: []
+    sizes: [2x1]

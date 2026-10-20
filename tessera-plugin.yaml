@@ -1,0 +1,71 @@
+# Magister School: a tile with the next lesson, today's schedule, homework, and grades from the Magister school system.
+# It reads data from Home Assistant entities created by the Magister School Integration.
+id: magister_school
+version: 0.1.0
+api: "0.8"
+icon: school
+maintainer: hydro-b
+license: MIT
+stage: beta
+topics: [time, calendar]
+requires:
+  esphome: 2026.6.2
+boards: any
+flash_kb: 8
+
+permissions:
+  read_entities: ["{child_entity}"]
+
+inputs:
+  - { id: child_entity, kind: entity, domains: [sensor], scope: screen, label: input_child_entity, hint: input_child_entity_hint }
+
+tiles:
+  - id: next_lesson
+    name: tile_next_lesson
+    icon: school
+    sizes: { min: 1x1, max: 2x1 }
+    memory: 500
+    domains: [sensor]
+    attributes: [vak, lokaal, start_time]
+    example: tile_next_lesson
+    preview: { title: "{vak}", countdown: start_time }
+
+  - id: schedule
+    name: tile_schedule
+    icon: calendar
+    sizes: { min: 1x1, max: 3x2 }
+    memory: 1200
+    domains: [sensor]
+    attributes: [aantal_afspraken]
+    example: tile_schedule
+    preview: { title: "Today", value: "{aantal_afspraken}" }
+
+  - id: homework
+    name: tile_homework
+    icon: book
+    sizes: { min: 1x1, max: 2x1 }
+    memory: 600
+    domains: [sensor]
+    attributes: [aantal_huiswerk, huiswerk]
+    example: tile_homework
+    preview: { title: "Homework", value: "{aantal_huiswerk} open" }
+
+  - id: grades
+    name: tile_grades
+    icon: chart-bar
+    sizes: { min: 1x1, max: 2x1 }
+    memory: 500
+    domains: [sensor]
+    attributes: [cijfers]
+    example: tile_grades
+    preview: { title: "Grades", value: "pending" }
+
+cards:
+  - { id: schedule_full, name: card_schedule }
+  - { id: homework_full, name: card_homework }
+  - { id: grades_full, name: card_grades }
+
+tap_actions:
+  - { id: schedule_full, label: tap_schedule, domains: [sensor], card: schedule_full }
+  - { id: homework_full, label: tap_homework, domains: [sensor], card: homework_full }
+  - { id: grades_full, label: tap_grades, domains: [sensor], card: grades_full }
