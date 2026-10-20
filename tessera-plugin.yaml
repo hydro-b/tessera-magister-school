@@ -26,9 +26,9 @@ tiles:
     sizes: { min: 1x1, max: 2x1 }
     memory: 500
     domains: [sensor]
-    attributes: [vak, lokaal, start_time]
+    attributes: [afspraken]
     example: tile_next_lesson
-    preview: { title: "{vak}", countdown: start_time }
+    preview: { title: "Next lesson", value: "loading" }
 
   - id: schedule
     name: tile_schedule
@@ -36,9 +36,9 @@ tiles:
     sizes: { min: 1x1, max: 3x2 }
     memory: 1200
     domains: [sensor]
-    attributes: [aantal_afspraken]
+    attributes: [aantal_afspraken_vandaag]
     example: tile_schedule
-    preview: { title: "Today", value: "{aantal_afspraken}" }
+    preview: { title: "Today", value: "{aantal_afspraken_vandaag}" }
 
   - id: homework
     name: tile_homework
@@ -46,9 +46,9 @@ tiles:
     sizes: { min: 1x1, max: 2x1 }
     memory: 600
     domains: [sensor]
-    attributes: [aantal_huiswerk, huiswerk]
+    attributes: [aantal_huiswerk, aantal_huiswerk_onafgerond]
     example: tile_homework
-    preview: { title: "Homework", value: "{aantal_huiswerk} open" }
+    preview: { title: "Homework", value: "{aantal_huiswerk_onafgerond}" }
 
   - id: grades
     name: tile_grades

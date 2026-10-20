@@ -5,8 +5,94 @@ namespace esphome::magister_school {
 
 using tessera::Font;
 namespace ui = tessera::ui;
+namespace theme = tessera::theme;
 
 static const char *const TAG = "magister_school";
+
+// Helper to get next upcoming lesson from afspraken array
+std::string get_next_lesson_vak(JsonObjectConst afspraken) {
+  if (!afspraken) return "";
+  
+  uint32_t now_ts = time(nullptr);
+  char now_str[32];
+  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
+  
+  // Find first appointment that starts after now
+  for (auto item : afspraken) {
+    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    if (!afspraak) continue;
+    
+    const char *start_str = afspraak.get<const char *>("start");
+    if (!start_str) continue;
+    
+    // Compare strings (works for ISO format YYYY-MM-DD HH:MM:SS)
+    if (strcmp(start_str, now_str) > 0) {
+      const char *vak = afspraak.get<const char *>("vak");
+      return vak ? vak : "";
+    }
+  }
+  return "";
+}
+
+std::string get_next_lesson_lokaal(JsonObjectConst afspraken) {
+  if (!afspraken) return "";
+  
+  uint32_t now_ts = time(nullptr);
+  char now_str[32];
+  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
+  
+  for (auto item : afspraken) {
+    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    if (!afspraak) continue;
+    
+    const char *start_str = afspraak.get<const char *>("start");
+    if (!start_str) continue;
+    
+    if (strcmp(start_str, now_str) > 0) {
+      const char *lokaal = afspraak.get<const char *>("lokaal");
+      if (lokaal) {
+        // Take first part before comma
+        char lokaal_first[32];
+        strncpy(lokaal_first, lokaal, sizeof(lokaal_first) - 1);
+        lokaal_first[sizeof(lokaal_first) - 1] = '\0';
+        char *comma = strchr(lokaal_first, ',');
+        if (comma) *comma = '\0';
+        return lokaal_first;
+      }
+      return "";
+    }
+  }
+  return "";
+}
+
+uint32_t get_next_lesson_start(JsonObjectConst afspraken) {
+  if (!afspraken) return 0;
+  
+  uint32_t now_ts = time(nullptr);
+  char now_str[32];
+  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
+  
+  for (auto item : afspraken) {
+    JsonObjectConst afspraak = item.value().to<JsonObjectConst>();
+    if (!afspraak) continue;
+    
+    const char *start_str = afspraak.get<const char *>("start");
+    if (!start_str) continue;
+    
+    if (strcmp(start_str, now_str) > 0) {
+      // Parse datetime string to timestamp
+      // Format: YYYY-MM-DD HH:MM:SS
+      struct tm tm = {};
+      sscanf(start_str, "%d-%d-%d %d:%d:%d", 
+             &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+             &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
+      tm.tm_year -= 1900;
+      tm.tm_mon -= 1;
+      return mktime(&tm);
+    }
+  }
+  return 0;
+}
 
 // ============== Next Lesson Tile ==============
 class NextLessonTile : public tessera::Tile {
@@ -17,50 +103,35 @@ class NextLessonTile : public tessera::Tile {
     ESP_LOGD(TAG, "NextLessonTile::create");
     parent_ = c.parent;
     
-    // Title label
     title_ = ui::label(parent_, Font::TITLE, theme::INK);
     lv_label_set_text(title_, plugin_->text("loading"));
     lv_obj_align(title_, LV_ALIGN_TOP_LEFT, 0, 0);
     
-    // Value label (time and room)
     value_ = ui::label(parent_, Font::BODY, theme::MUTED);
     lv_label_set_text(value_, "");
     lv_obj_align(value_, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     
-    // Icon circle
     icon_ = lv_obj_create(parent_);
     lv_obj_set_size(icon_, 40, 40);
     lv_obj_align(icon_, LV_ALIGN_RIGHT_MID, -10, 0);
     lv_obj_set_style_bg_color(icon_, ui::color(theme::ACCENT), 0);
     lv_obj_set_style_radius(icon_, LV_RADIUS_CIRCLE, 0);
-    
     lv_obj_add_flag(icon_, LV_OBJ_FLAG_HIDDEN);
   }
   
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "NextLessonTile::on_state");
     
-    // Get entity attributes
-    const char *vak = nullptr;
-    const char *lokaal = nullptr;
-    int64_t start_time = 0;
+    JsonObjectConst afspraken = data["afspraken"].to<JsonObjectConst>();
     
-    if (data.containsKey("vak")) {
-      vak = data["vak"];
-    }
-    if (data.containsKey("lokaal")) {
-      lokaal = data["lokaal"];
-    }
-    if (data.containsKey("start_time")) {
-      start_time = data["start_time"];
-    }
+    std::string vak = get_next_lesson_vak(afspraken);
+    std::string lokaal = get_next_lesson_lokaal(afspraken);
+    uint32_t start_time = get_next_lesson_start(afspraken);
     
-    // Store for on_tick
-    vak_ = vak ? vak : "";
-    lokaal_ = lokaal ? lokaal : "";
+    vak_ = vak;
+    lokaal_ = lokaal;
     start_time_ = start_time;
     
-    // Update title
     if (!vak_.empty()) {
       ui::set_text(title_, vak_.c_str());
       lv_obj_add_flag(icon_, LV_OBJ_FLAG_HIDDEN);
@@ -69,7 +140,6 @@ class NextLessonTile : public tessera::Tile {
       lv_obj_clear_flag(icon_, LV_OBJ_FLAG_HIDDEN);
     }
     
-    // Update value
     std::string value_text;
     if (!lokaal_.empty()) {
       value_text = std::string(plugin_->text("in_room")) + " " + lokaal_;
@@ -81,7 +151,6 @@ class NextLessonTile : public tessera::Tile {
     if (start_time_ > 0 && !vak_.empty()) {
       int64_t diff = start_time_ - epoch;
       if (diff > 0 && diff < 3600) {
-        // Less than an hour away
         char buf[32];
         snprintf(buf, sizeof(buf), "%d min", (int)(diff / 60));
         ui::set_text(value_, buf);
@@ -105,7 +174,7 @@ class NextLessonTile : public tessera::Tile {
   lv_obj_t *icon_;
   std::string vak_;
   std::string lokaal_;
-  int64_t start_time_ = 0;
+  uint32_t start_time_ = 0;
 };
 
 // ============== Schedule Tile ==============
@@ -117,12 +186,10 @@ class ScheduleTile : public tessera::Tile {
     ESP_LOGD(TAG, "ScheduleTile::create");
     parent_ = c.parent;
     
-    // Title
     title_ = ui::label(parent_, Font::TITLE, theme::INK);
     ui::set_text(title_, plugin_->text("today"));
     lv_obj_align(title_, LV_ALIGN_TOP_LEFT, 0, 0);
     
-    // Count
     count_ = ui::label(parent_, Font::BODY, theme::MUTED);
     ui::set_text(count_, plugin_->text("loading"));
     lv_obj_align(count_, LV_ALIGN_BOTTOM_LEFT, 0, 0);
@@ -131,10 +198,7 @@ class ScheduleTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "ScheduleTile::on_state");
     
-    int aantal = 0;
-    if (data.containsKey("aantal_afspraken")) {
-      aantal = data["aantal_afspraken"];
-    }
+    int aantal = data["aantal_afspraken_vandaag"] | 0;
     
     if (aantal > 0) {
       char buf[32];
@@ -178,9 +242,10 @@ class HomeworkTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "HomeworkTile::on_state");
     
-    int aantal = 0;
-    if (data.containsKey("aantal_huiswerk")) {
-      aantal = data["aantal_huiswerk"];
+    // Try aantal_huiswerk_onafgerond first, then aantal_huiswerk
+    int aantal = data["aantal_huiswerk_onafgerond"] | 0;
+    if (aantal == 0) {
+      aantal = data["aantal_huiswerk"] | 0;
     }
     
     if (aantal > 0) {
@@ -225,8 +290,14 @@ class GradesTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "GradesTile::on_state");
     
-    // Would extract recent grade or average from cijfers array
-    ui::set_text(value_, plugin_->text("no_grades"));
+    // For now, just show no grades - can be enhanced later
+    JsonArrayConst cijfers = data["cijfers"].to<JsonArrayConst>();
+    if (cijfers && cijfers.size() > 0) {
+      // Would parse cijfers here
+      ui::set_text(value_, "See app");
+    } else {
+      ui::set_text(value_, plugin_->text("no_grades"));
+    }
   }
   
   void on_theme() override {
@@ -245,32 +316,26 @@ class GradesTile : public tessera::Tile {
 void MagisterSchool::setup() {
   ESP_LOGI(TAG, "Setting up Magister School plugin");
   
-  // Next lesson tile
   this->add_tile("next_lesson", [this]() {
     return new NextLessonTile(this);
   });
   
-  // Schedule tile
   this->add_tile("schedule", [this]() {
     return new ScheduleTile(this);
   });
   
-  // Homework tile
   this->add_tile("homework", [this]() {
     return new HomeworkTile(this);
   });
   
-  // Grades tile
   this->add_tile("grades", [this]() {
     return new GradesTile(this);
   });
   
-  // Cards (placeholder - not yet implemented)
   this->add_card("schedule_full", [this]() { return nullptr; }, false);
   this->add_card("homework_full", [this]() { return nullptr; }, false);
   this->add_card("grades_full", [this]() { return nullptr; }, false);
   
-  // Tap actions (placeholder - not yet implemented)
   this->add_tap_action("schedule_full", [this](const tessera::TapContext &) {});
   this->add_tap_action("homework_full", [this](const tessera::TapContext &) {});
   this->add_tap_action("grades_full", [this](const tessera::TapContext &) {});
