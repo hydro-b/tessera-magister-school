@@ -193,14 +193,27 @@ class ScheduleTile : public tessera::Tile {
   void on_state(JsonObjectConst data) override {
     ESP_LOGD(TAG, "ScheduleTile::on_state");
     
+    // Debug: log what we receive
+    ESP_LOGI(TAG, "ScheduleTile data keys:");
+    for (auto item : data) {
+      ESP_LOGI(TAG, "  - %s", item.key().c_str());
+    }
+    
     int aantal = data["aantal_afspraken_vandaag"] | 0;
+    ESP_LOGI(TAG, "aantal_afspraken_vandaag = %d", aantal);
     
     if (aantal > 0) {
       char buf[32];
       snprintf(buf, sizeof(buf), "%d lessons today", aantal);
       ui::set_text(count_, buf);
     } else {
-      ui::set_text(count_, plugin_->text("no_lessons"));
+      // Check if data is missing entirely
+      if (data.size() == 0) {
+        ESP_LOGW(TAG, "No data received from app!");
+        ui::set_text(count_, "No data");
+      } else {
+        ui::set_text(count_, "0 lessons");
+      }
     }
   }
   
