@@ -115,18 +115,27 @@ class NextLessonTile : public tessera::Tile {
   }
   
   void on_state(JsonObjectConst data) override {
-    ESP_LOGD(TAG, "NextLessonTile::on_state");
+    ESP_LOGI(TAG, "=== NextLessonTile::on_state ===");
     
     JsonObjectConst attributes = data["attributes"];
     JsonObjectConst afspraken;
     
     if (attributes) {
       afspraken = attributes["afspraken"];
+      ESP_LOGI(TAG, "Afspraken exists: %s", afspraken ? "YES" : "NO");
+      if (afspraken) {
+        ESP_LOGI(TAG, "Afspraken size: %d", afspraken.size());
+      }
+    } else {
+      ESP_LOGW(TAG, "No attributes!");
     }
     
     std::string vak = get_next_lesson_vak(afspraken);
     std::string lokaal = get_next_lesson_lokaal(afspraken);
     time_t start_time = get_next_lesson_start(afspraken);
+    
+    ESP_LOGI(TAG, "Next lesson: vak=%s, lokaal=%s, start=%ld", 
+             vak.c_str(), lokaal.c_str(), (long)start_time);
     
     vak_ = vak;
     lokaal_ = lokaal;
@@ -145,6 +154,7 @@ class NextLessonTile : public tessera::Tile {
       value_text = std::string(plugin_->text("in_room")) + " " + lokaal_;
     }
     ui::set_text(value_, value_text.empty() ? "" : value_text.c_str());
+    ESP_LOGI(TAG, "=== End NextLessonTile ===");
   }
   
   void on_tick(uint32_t epoch) override {
@@ -314,25 +324,33 @@ class HomeworkTile : public tessera::Tile {
   }
   
   void on_state(JsonObjectConst data) override {
-    ESP_LOGD(TAG, "HomeworkTile::on_state");
+    ESP_LOGI(TAG, "=== HomeworkTile::on_state ===");
     
     JsonObjectConst attributes = data["attributes"];
     int aantal = 0;
     
     if (attributes) {
+      ESP_LOGI(TAG, "Attributes exist: YES");
       aantal = attributes["aantal_huiswerk_onafgerond"] | 0;
+      ESP_LOGI(TAG, "aantal_huiswerk_onafgerond: %d", aantal);
       if (aantal == 0) {
         aantal = attributes["aantal_huiswerk"] | 0;
+        ESP_LOGI(TAG, "aantal_huiswerk: %d", aantal);
       }
+    } else {
+      ESP_LOGW(TAG, "No attributes!");
     }
     
     if (aantal > 0) {
       char buf[32];
       snprintf(buf, sizeof(buf), "%d open", aantal);
       ui::set_text(count_, buf);
+      ESP_LOGI(TAG, "Showing: %s", buf);
     } else {
       ui::set_text(count_, plugin_->text("no_homework"));
+      ESP_LOGI(TAG, "Showing: no_homework");
     }
+    ESP_LOGI(TAG, "=== End HomeworkTile ===");
   }
   
   void on_theme() override {
@@ -366,20 +384,30 @@ class GradesTile : public tessera::Tile {
   }
   
   void on_state(JsonObjectConst data) override {
-    ESP_LOGD(TAG, "GradesTile::on_state");
+    ESP_LOGI(TAG, "=== GradesTile::on_state ===");
     
     JsonObjectConst attributes = data["attributes"];
     JsonArrayConst cijfers;
     
     if (attributes) {
+      ESP_LOGI(TAG, "Attributes exist: YES");
       cijfers = attributes["recente_cijfers"];
+      ESP_LOGI(TAG, "Recente cijfers exists: %s", cijfers ? "YES" : "NO");
+      if (cijfers) {
+        ESP_LOGI(TAG, "Cijfers size: %d", cijfers.size());
+      }
+    } else {
+      ESP_LOGW(TAG, "No attributes!");
     }
     
     if (cijfers && cijfers.size() > 0) {
       ui::set_text(value_, "See app");
+      ESP_LOGI(TAG, "Showing: See app");
     } else {
       ui::set_text(value_, plugin_->text("no_grades"));
+      ESP_LOGI(TAG, "Showing: no_grades");
     }
+    ESP_LOGI(TAG, "=== End GradesTile ===");
   }
   
   void on_theme() override {
