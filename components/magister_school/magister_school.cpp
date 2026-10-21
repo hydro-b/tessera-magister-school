@@ -413,14 +413,6 @@ void MagisterSchool::setup() {
   this->add_tile("grades", [this]() {
     return new GradesTile(this);
   });
-  
-  this->add_card("schedule_full", [this]() { return nullptr; }, false);
-  this->add_card("homework_full", [this]() { return nullptr; }, false);
-  this->add_card("grades_full", [this]() { return nullptr; }, false);
-  
-  this->add_tap_action("schedule_full", [this](const tessera::TapContext &) {});
-  this->add_tap_action("homework_full", [this](const tessera::TapContext &) {});
-  this->add_tap_action("grades_full", [this](const tessera::TapContext &) {});
 }
 
 }  // namespace esphome::magister_school

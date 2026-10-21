@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.3 - 2026-10-21
+- Bump version to match online release
+
 ## 0.2.0 - 2026-10-20
 - Add verbose debug logging to diagnose data issues
 - Log all keys and values to see what data is received

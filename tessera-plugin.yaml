@@ -1,8 +1,8 @@
 # Magister School: a tile with the next lesson, today's schedule, homework, and grades from the Magister school system.
 # It reads data from Home Assistant entities created by the Magister School Integration.
 id: magister_school
-version: 0.2.1
-api: "0.8"
+version: 0.2.3
+api: "0.12"
 icon: school
 maintainer: hydro-b
 license: MIT
@@ -60,12 +60,4 @@ tiles:
     example: tile_grades
     preview: { title: "Grades", value: "pending" }
 
-cards:
-  - { id: schedule_full, name: card_schedule }
-  - { id: homework_full, name: card_homework }
-  - { id: grades_full, name: card_grades }
 
-tap_actions:
-  - { id: schedule_full, label: tap_schedule, domains: [sensor], card: schedule_full }
-  - { id: homework_full, label: tap_homework, domains: [sensor], card: homework_full }
-  - { id: grades_full, label: tap_grades, domains: [sensor], card: grades_full }
