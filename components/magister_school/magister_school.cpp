@@ -9,85 +9,6 @@ namespace ui = tessera::ui;
 
 static const char *const TAG = "magister_school";
 
-// Helper to get next upcoming lesson from afspraken array
-std::string get_next_lesson_vak(JsonObjectConst afspraken) {
-  if (!afspraken) return "";
-  
-  time_t now_ts = time(nullptr);
-  char now_str[32];
-  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
-  
-  for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value();
-    if (!afspraak) continue;
-    
-    const char *start_str = afspraak["start"];
-    if (!start_str) continue;
-    
-    if (strcmp(start_str, now_str) > 0) {
-      const char *vak = afspraak["vak"];
-      return vak ? vak : "";
-    }
-  }
-  return "";
-}
-
-std::string get_next_lesson_lokaal(JsonObjectConst afspraken) {
-  if (!afspraken) return "";
-  
-  time_t now_ts = time(nullptr);
-  char now_str[32];
-  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
-  
-  for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value();
-    if (!afspraak) continue;
-    
-    const char *start_str = afspraak["start"];
-    if (!start_str) continue;
-    
-    if (strcmp(start_str, now_str) > 0) {
-      const char *lokaal = afspraak["lokaal"];
-      if (lokaal) {
-        char lokaal_first[32];
-        strncpy(lokaal_first, lokaal, sizeof(lokaal_first) - 1);
-        lokaal_first[sizeof(lokaal_first) - 1] = '\0';
-        char *comma = strchr(lokaal_first, ',');
-        if (comma) *comma = '\0';
-        return lokaal_first;
-      }
-      return "";
-    }
-  }
-  return "";
-}
-
-time_t get_next_lesson_start(JsonObjectConst afspraken) {
-  if (!afspraken) return 0;
-  
-  time_t now_ts = time(nullptr);
-  char now_str[32];
-  strftime(now_str, sizeof(now_str), "%Y-%m-%d %H:%M:%S", localtime(&now_ts));
-  
-  for (auto item : afspraken) {
-    JsonObjectConst afspraak = item.value();
-    if (!afspraak) continue;
-    
-    const char *start_str = afspraak["start"];
-    if (!start_str) continue;
-    
-    if (strcmp(start_str, now_str) > 0) {
-      struct tm tm = {};
-      sscanf(start_str, "%d-%d-%d %d:%d:%d", 
-             &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
-             &tm.tm_hour, &tm.tm_min, &tm.tm_sec);
-      tm.tm_year -= 1900;
-      tm.tm_mon -= 1;
-      return mktime(&tm);
-    }
-  }
-  return 0;
-}
 
 // ============== Next Lesson Tile ==============
 class NextLessonTile : public tessera::Tile {
@@ -118,27 +39,44 @@ class NextLessonTile : public tessera::Tile {
     ESP_LOGI(TAG, "=== NextLessonTile::on_state ===");
     
     JsonObjectConst attributes = data["attributes"];
-    JsonObjectConst afspraken;
     
-    if (attributes) {
-      afspraken = attributes["afspraken"];
-      ESP_LOGI(TAG, "Afspraken exists: %s", afspraken ? "YES" : "NO");
-      if (afspraken) {
-        ESP_LOGI(TAG, "Afspraken size: %d", afspraken.size());
-      }
-    } else {
+    if (!attributes) {
       ESP_LOGW(TAG, "No attributes!");
+      ui::set_text(title_, plugin_->text("no_lessons"));
+      ui::set_text(value_, "");
+      return;
     }
     
-    std::string vak = get_next_lesson_vak(afspraken);
-    std::string lokaal = get_next_lesson_lokaal(afspraken);
-    time_t start_time = get_next_lesson_start(afspraken);
+    // Magister integration uses: volgende_vak, volgende_afspraak (not afspraken array)
+    const char *volgende_vak = attributes["volgende_vak"];
+    const char *volgende_afspraak = attributes["volgende_afspraak"];
     
-    ESP_LOGI(TAG, "Next lesson: vak=%s, lokaal=%s, start=%ld", 
-             vak.c_str(), lokaal.c_str(), (long)start_time);
+    ESP_LOGI(TAG, "volgende_vak: %s", volgende_vak ? volgende_vak : "NULL");
+    ESP_LOGI(TAG, "volgende_afspraak: %s", volgende_afspraak ? volgende_afspraak : "NULL");
     
-    vak_ = vak;
-    lokaal_ = lokaal;
+    // Parse start time from "2026-10-21 09:05:00" or "09:05"
+    time_t start_time = 0;
+    if (volgende_afspraak) {
+      // Try full datetime first
+      struct tm tm = {};
+      if (strptime(volgende_afspraak, "%Y-%m-%d %H:%M:%S", &tm)) {
+        tm.tm_year -= 1900;
+        tm.tm_mon -= 1;
+        start_time = mktime(&tm);
+      } else if (strptime(volgende_afspraak, "%H:%M", &tm)) {
+        // Just time, use today's date
+        time_t now = time(nullptr);
+        struct tm *now_tm = localtime(&now);
+        tm.tm_year = now_tm->tm_year;
+        tm.tm_mon = now_tm->tm_mon;
+        tm.tm_mday = now_tm->tm_mday;
+        start_time = mktime(&tm);
+      }
+      ESP_LOGI(TAG, "Parsed start_time: %ld", (long)start_time);
+    }
+    
+    vak_ = volgende_vak ? volgende_vak : "";
+    lokaal_ = "";  // Magister doesn't provide lokaal in these attributes
     start_time_ = start_time;
     
     if (!vak_.empty()) {
@@ -149,11 +87,12 @@ class NextLessonTile : public tessera::Tile {
       lv_obj_clear_flag(icon_, LV_OBJ_FLAG_HIDDEN);
     }
     
-    std::string value_text;
-    if (!lokaal_.empty()) {
-      value_text = std::string(plugin_->text("in_room")) + " " + lokaal_;
+    // Show time instead of room
+    if (volgende_afspraak) {
+      ui::set_text(value_, volgende_afspraak);
+    } else {
+      ui::set_text(value_, "");
     }
-    ui::set_text(value_, value_text.empty() ? "" : value_text.c_str());
     ESP_LOGI(TAG, "=== End NextLessonTile ===");
   }
   
@@ -329,16 +268,22 @@ class HomeworkTile : public tessera::Tile {
     JsonObjectConst attributes = data["attributes"];
     int aantal = 0;
     
-    if (attributes) {
-      ESP_LOGI(TAG, "Attributes exist: YES");
-      aantal = attributes["aantal_huiswerk_onafgerond"] | 0;
-      ESP_LOGI(TAG, "aantal_huiswerk_onafgerond: %d", aantal);
-      if (aantal == 0) {
-        aantal = attributes["aantal_huiswerk"] | 0;
-        ESP_LOGI(TAG, "aantal_huiswerk: %d", aantal);
-      }
-    } else {
+    if (!attributes) {
       ESP_LOGW(TAG, "No attributes!");
+      ui::set_text(count_, plugin_->text("no_homework"));
+      ESP_LOGI(TAG, "=== End HomeworkTile ===");
+      return;
+    }
+    
+    ESP_LOGI(TAG, "Attributes exist: YES");
+    
+    // Magister uses: aantal_huiswerk_onafgerond or aantal_huiswerk
+    aantal = attributes["aantal_huiswerk_onafgerond"] | 0;
+    ESP_LOGI(TAG, "aantal_huiswerk_onafgerond: %d", aantal);
+    
+    if (aantal == 0) {
+      aantal = attributes["aantal_huiswerk"] | 0;
+      ESP_LOGI(TAG, "aantal_huiswerk: %d", aantal);
     }
     
     if (aantal > 0) {
@@ -389,20 +334,53 @@ class GradesTile : public tessera::Tile {
     JsonObjectConst attributes = data["attributes"];
     JsonArrayConst cijfers;
     
-    if (attributes) {
-      ESP_LOGI(TAG, "Attributes exist: YES");
-      cijfers = attributes["recente_cijfers"];
-      ESP_LOGI(TAG, "Recente cijfers exists: %s", cijfers ? "YES" : "NO");
-      if (cijfers) {
-        ESP_LOGI(TAG, "Cijfers size: %d", cijfers.size());
-      }
-    } else {
+    if (!attributes) {
       ESP_LOGW(TAG, "No attributes!");
+      ui::set_text(value_, plugin_->text("no_grades"));
+      ESP_LOGI(TAG, "=== End GradesTile ===");
+      return;
     }
     
-    if (cijfers && cijfers.size() > 0) {
-      ui::set_text(value_, "See app");
-      ESP_LOGI(TAG, "Showing: See app");
+    ESP_LOGI(TAG, "Attributes exist: YES");
+    
+    // Magister uses: cijfers or laatste_3_cijfers (not recente_cijfers)
+    cijfers = attributes["laatste_3_cijfers"];
+    ESP_LOGI(TAG, "laatste_3_cijfers exists: %s", cijfers ? "YES" : "NO");
+    if (!cijfers) {
+      cijfers = attributes["cijfers"];
+      ESP_LOGI(TAG, "cijfers exists: %s", cijfers ? "YES" : "NO");
+    }
+    
+    int size = cijfers ? cijfers.size() : 0;
+    ESP_LOGI(TAG, "Cijfers size: %d", size);
+    
+    if (size > 0) {
+      // Calculate average or show count
+      double sum = 0;
+      int count = 0;
+      for (auto item : cijfers) {
+        if (item.is<JsonObjectConst>()) {
+          JsonObjectConst cijfer_obj = item;
+          float waarde = cijfer_obj["waarde"] | cijfer_obj["cijfer"] | 0.0;
+          if (waarde > 0) {
+            sum += waarde;
+            count++;
+          }
+        }
+      }
+      
+      if (count > 0) {
+        double avg = sum / count;
+        char buf[32];
+        snprintf(buf, sizeof(buf), "Avg: %.1f", avg);
+        ui::set_text(value_, buf);
+        ESP_LOGI(TAG, "Showing average: %.1f", avg);
+      } else {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%d cijfers", size);
+        ui::set_text(value_, buf);
+        ESP_LOGI(TAG, "Showing count: %d", size);
+      }
     } else {
       ui::set_text(value_, plugin_->text("no_grades"));
       ESP_LOGI(TAG, "Showing: no_grades");

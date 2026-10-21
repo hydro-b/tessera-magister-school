@@ -1,9 +1,13 @@
 # Changelog
 
-## 0.2.3 - 2026-10-21
-- Bump version to match online release
+## 0.2.4 - 2026-10-21
+- Fix: Use correct Magister attribute names
+- Next lesson: use `volgende_vak` and `volgende_afspraak` instead of afspraken array
+- Grades: use `cijfers` or `laatste_3_cijfers` instead of recente_cijfers
+- Homework: already correct with aantal_huiswerk_onafgerond
+- Add verbose debug logging to all tiles
 
-## 0.2.0 - 2026-10-20
+## 0.2.3 - 2026-10-21
 - Add verbose debug logging to diagnose data issues
 - Log all keys and values to see what data is received
 - Will help identify why data is not showing
