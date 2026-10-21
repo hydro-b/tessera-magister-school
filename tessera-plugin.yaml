@@ -1,7 +1,7 @@
 # Magister School: a tile with the next lesson, today's schedule, homework, and grades from the Magister school system.
 # It reads data from Home Assistant entities created by the Magister School Integration.
 id: magister_school
-version: 0.2.3
+version: 0.2.4
 api: "0.12"
 icon: school
 maintainer: hydro-b
